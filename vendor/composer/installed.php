@@ -1,0 +1,41 @@
+<?php return array(
+    'root' => array(
+        'name' => 'vendor/incidencias',
+        'pretty_version' => '1.0.0+no-version-set',
+        'version' => '1.0.0.0',
+        'reference' => null,
+        'type' => 'library',
+        'install_path' => __DIR__ . '/../../',
+        'aliases' => array(),
+        'dev' => true,
+    ),
+    'versions' => array(
+        'phpstan/phpstan' => array(
+            'pretty_version' => '1.12.33',
+            'version' => '1.12.33.0',
+            'reference' => '37982d6fc7cbb746dda7773530cda557cdf119e1',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../phpstan/phpstan',
+            'aliases' => array(),
+            'dev_requirement' => true,
+        ),
+        'prestashop/phpstan-prestashop' => array(
+            'pretty_version' => '2.0.0',
+            'version' => '2.0.0.0',
+            'reference' => '8e915210f8071f517fcbcbcc2fde6078ce7fbc36',
+            'type' => 'phpstan-extension',
+            'install_path' => __DIR__ . '/../prestashop/phpstan-prestashop',
+            'aliases' => array(),
+            'dev_requirement' => true,
+        ),
+        'vendor/incidencias' => array(
+            'pretty_version' => '1.0.0+no-version-set',
+            'version' => '1.0.0.0',
+            'reference' => null,
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../../',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+    ),
+);

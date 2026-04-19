@@ -1,0 +1,15 @@
+{
+  "name": "vendor/incidencias",
+  "description": "Módulo Incidencias",
+  "autoload": {
+    "classmap": [
+      "../../classes/",
+      "../../controllers/",
+      "classes/",
+      "controllers/"
+    ]
+  },
+  "require-dev": {
+    "prestashop/phpstan-prestashop": "^2.0"
+  }
+}
