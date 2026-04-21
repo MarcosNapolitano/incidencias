@@ -3,7 +3,42 @@
 <div class="panel">
     <div class="panel-heading">
         <i class="icon-edit"></i>
-        {l s='Crear Registro' mod='incidencias'}
+        {l s='Incidencias Actuales' mod='incidencias'}
+    </div>
+    
+    <div class="panel-body">
+    {if !empty($incidencias)}
+      <table class="table table-striped table-hover" id="resultados">
+          <thead>
+              <tr>
+                  <th>ID</th>
+                  <th>{l s='Fecha' mod='incidencias'}</th>
+                  <th>{l s='Referencia' mod='incidencias'}</th>
+                  <th>{l s='Pedido' mod='incidencias'}</th>
+                  <th>{l s='Estado' mod='incidencias'}</th>
+              </tr>
+          </thead>
+
+          <tbody>
+              {foreach from=$incidencias item=incidencia}
+                  <tr>
+                      <td>{$incidencia.creado|escape:'html':'UTF-8'}</td>
+                      <td>{$incidencia.creado|date_format:"%d/%m/%Y"}</td>
+                      <td>{$incidencia.id_order|escape:'html':'UTF-8'}</td>
+                      <td>{$incidencia.estado|escape:'html':'UTF-8'}</td>
+                  </tr>
+              {/foreach}
+          </tbody>
+      </table>
+    {else}
+      <h3 class="text-center">{l s='No hay incidencias actualmente.' mod='incidencias'}</h3>
+    {/if}
+    </div>
+</div>
+<div class="panel">
+    <div class="panel-heading">
+        <i class="icon-edit"></i>
+        {l s='Crear Incidencia' mod='incidencias'}
     </div>
     
     <div class="panel-body">
@@ -12,61 +47,49 @@
             {* Campo de texto *}
             <div class="form-group">
                 <label class="control-label col-lg-3">
-                    {l s='Título' mod='incidencias'}
-                    <span class="required">*</span>
+                    {l s='Pedido' mod='incidencias'}
                 </label>
                 <div class="col-lg-9">
-                    <input type="text" 
-                           name="titulo" 
-                           class="form-control" 
-                           value="{if isset($registro.titulo)}{$registro.titulo}{/if}"
-                           required />
-                </div>
-            </div>
-            
-            {* Textarea *}
-            <div class="form-group">
-                <label class="control-label col-lg-3">
-                    {l s='Descripción' mod='incidencias'}
-                </label>
-                <div class="col-lg-9">
-                    <textarea name="descripcion" 
-                              class="form-control" 
-                              rows="5">{if isset($registro.descripcion)}{$registro.descripcion}{/if}</textarea>
-                </div>
-            </div>
-            
-            {* Checkbox *}
-            <div class="form-group">
-                <label class="control-label col-lg-3">
-                    {l s='Activo' mod='incidencias'}
-                </label>
-                <div class="col-lg-9">
-                    <label class="switch">
-                        <input type="checkbox" 
-                               name="activo" 
-                               value="1"
-                               {if isset($registro.activo) && $registro.activo}checked{/if} />
-                        <span class="slider round"></span>
-                    </label>
+                    <select name="id_order" class="form-control" required>
+                        <option value="">-- {l s='Seleccione' mod='incidencias'} --</option>
+                        {foreach from=$pedidos item=order}
+                            <option value="{$order.id_order}"
+                                    {if isset($registro.id_categoria) && $registro.id_categoria == $cat.id_categoria}selected{/if}>
+                                {$order.reference} - {$order.date_add|date_format:"%d/%m/%y"}
+                            </option>
+                        {/foreach}
+                    </select>
                 </div>
             </div>
             
             {* Select *}
             <div class="form-group">
                 <label class="control-label col-lg-3">
-                    {l s='Categoría' mod='incidencias'}
+                    {l s='Motivo' mod='incidencias'}
                 </label>
                 <div class="col-lg-9">
-                    <select name="id_categoria" class="form-control">
+                    <select name="id_tipo" class="form-control" required>
                         <option value="">-- {l s='Seleccione' mod='incidencias'} --</option>
-                        {foreach from=$categorias item=cat}
-                            <option value="{$cat.id_categoria}"
+                        {foreach from=$tipos item=tipo}
+                            <option value="{$tipo.id_tipo}"
                                     {if isset($registro.id_categoria) && $registro.id_categoria == $cat.id_categoria}selected{/if}>
-                                {$cat.nombre}
+                                {$tipo.tipo}
                             </option>
                         {/foreach}
                     </select>
+                </div>
+            </div>
+
+            {* Textarea *}
+            <div class="form-group">
+                <label class="control-label col-lg-3">
+                    {l s='Descripción' mod='incidencias'}
+                </label>
+                <div class="col-lg-9">
+                    <textarea name="mensaje" 
+                              class="form-control" 
+                              rows="5"
+                              required>{if isset($registro.descripcion)}{$registro.descripcion}{/if}</textarea>
                 </div>
             </div>
             
@@ -89,4 +112,15 @@
         </form>
     </div>
 </div>
+{if isset($success)}
+    <div class="alert alert-success">
+        {l s='Incidencia creada correctamente' mod='incidencias'}
+    </div>
+{/if}
+
+{if isset($error)}
+    <div class="alert alert-danger">
+        {l s='Ha ocurrido un error al crear la incidencia' mod='incidencias'}
+    </div>
+{/if}
 {/block}

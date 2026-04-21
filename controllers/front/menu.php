@@ -9,32 +9,36 @@ class IncidenciasMenuModuleFrontController extends ModuleFrontController
   public function initContent()
   {
     parent::initContent();
+
+    if (Tools::getValue('conf') == 1) {
+      $this->context->smarty->assign('success', true);
+    }
+
+    if (Tools::getValue('error') == 1) {
+      $this->context->smarty->assign('error', true);
+    }
+
     // Procesar envío del formulario
     if (Tools::isSubmit('submitGuardar')) {
       $this->procesarFormulario();
     }
 
-    // Obtener datos para el formulario (si edición)
-    $id = (int)Tools::getValue('id_registro');
-    $registro = null;
+    /* // Obtener categorías para el select */
+    $user_id = $this->context->customer->id;
+    $pedidos = Db::getInstance()->executeS('
+            SELECT * FROM ' . _DB_PREFIX_ . 'orders WHERE `id_customer` = ' . pSQL($user_id));
 
-    if ($id) {
-      $registro = Db::getInstance()->getRow(
-        '
-                SELECT * FROM ' . _DB_PREFIX_ . 'holamundo_registros 
-                WHERE id_registro = ' . $id
-      );
-    }
-
-    // Obtener categorías para el select
-    $categorias = Db::getInstance()->executeS('
-            SELECT * FROM ' . _DB_PREFIX_ . 'holamundo_categorias
-        ');
+    $tipos = Db::getInstance()->executeS('
+            SELECT * FROM ' . _DB_PREFIX_ . 'incidencias_tipos');
+    $incidencias = DB::getInstance()->executeS('
+            SELECT * FROM ' . _DB_PREFIX_ . 'incidencias_incidencias WHERE
+            `id_customer` = ' . pSQL($user_id));
 
     // Asignar a Smarty
     $this->context->smarty->assign(array(
-      'registro' => $registro,
-      'categorias' => $categorias,
+      'tipos' => $tipos,
+      'pedidos' => $pedidos,
+      'incidencias' => $incidencias,
       'link' => $this->context->link
     ));
     $this->setTemplate('module:incidencias/views/templates/front/incidencias_front.tpl');
@@ -43,46 +47,35 @@ class IncidenciasMenuModuleFrontController extends ModuleFrontController
   protected function procesarFormulario()
   {
     // Obtener valores del formulario
-    $id = (int)Tools::getValue('id_registro');
-    $titulo = pSQL(Tools::getValue('titulo'));
-    $descripcion = pSQL(Tools::getValue('descripcion'));
-    $activo = (int)Tools::getValue('activo');
-    $id_categoria = (int)Tools::getValue('id_categoria');
+    $id_customer = (int)$this->context->customer->id;
+    $id_order = (int)Tools::getValue('id_order');
+    $id_tipo = (int)Tools::getValue('id_tipo');
+    $mensaje = pSQL(Tools::getValue('mensaje'));
 
     // Validar
-    if (empty($titulo)) {
-      $this->errors[] = $this->l('El título es obligatorio');
+    if (empty($mensaje)) {
+      $this->errors[] = $this->l('No hay mensaje.');
       return;
     }
 
-    // Guardar con ObjectModel
-    if ($id) {
-      // Actualizar
-      /* $registro = new INCIDENCIA_MODEL($id); */
-    } else {
-      // Crear nuevo
-      // NUEVA INCIDENCIA MODEL
-      /* $registro = new HolaMundoRegistro(); */
-    }
+    require_once _PS_MODULE_DIR_ . 'incidencias/classes/IncidenciasIncidencias.php';
 
-    /* $registro->titulo = $titulo; */
-    /* $registro->descripcion = $descripcion; */
-    /* $registro->activo = $activo; */
-    /* $registro->id_categoria = $id_categoria; */
-    /**/
-    /* if ($id) { */
-    /*   $resultado = $registro->update(); */
-    /* } else { */
-    /*   $resultado = $registro->add(); */
-    /* } */
-    /**/
-    if ($resultado) {
-      $this->confirmations[] = $this->l('Guardado correctamente');
+    $registro = new IncidenciasIncidencias();
 
-      // Redireccionar a la lista
-      Tools::redirectAdmin($this->context->link->getAdminLink('AdminHolaMundo'));
-    } else {
-      $this->errors[] = $this->l('Error al guardar');
-    }
+    $registro->id_order = $id_order;
+    $registro->id_customer = $id_customer;
+    $registro->id_categoria = 1;
+    $registro->id_tipo = $id_tipo;
+    $registro->estado = 1;
+
+    $resultado = $registro->add();
+
+    Tools::redirect(
+      $this->context->link->getModuleLink(
+        $this->module->name,
+        'incidencias',
+        $resultado ? ['conf' => 1] : ['error' => 1]
+      )
+    );
   }
 }

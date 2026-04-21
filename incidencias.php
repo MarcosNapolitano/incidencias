@@ -33,11 +33,26 @@ class Incidencias extends Module
 
   public function install()
   {
-    $sql1 = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_incidencias` (
-    `id_incidencia` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
-    `id_order` INT(11) UNSIGNED NOT NULL,
+    $sql = [
+      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_tipos` (
+    `id_tipo` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
+    `tipo` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`id_tipo`)
+    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
+
+      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_categorias` (
+    `id_categoria` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
+    `categoria` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`id_categoria`)
+    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
+
+      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_incidencias` (
+    `id_incidencia` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id_order` INT UNSIGNED NOT NULL,
+    `id_customer` INT UNSIGNED NULL,
+    `id_categoria` INT UNSIGNED NULL,
+    `id_tipo` INT UNSIGNED NULL,
     `estado` TINYINT(1) NOT NULL DEFAULT 1,
-    `categoria` VARCHAR(255) NOT NULL DEFAULT \'Otros Motivos...\',
     `creado` DATETIME NOT NULL,
     `modificado` DATETIME NOT NULL,
     PRIMARY KEY (`id_incidencia`), 
@@ -46,12 +61,31 @@ class Incidencias extends Module
         FOREIGN KEY (`id_order`)
         REFERENCES `' . _DB_PREFIX_ . 'orders`(`id_order`)
         ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    INDEX `idx_id_customer` (`id_customer`),
+    CONSTRAINT `fk_' . $this->name . '_customer`
+        FOREIGN KEY (`id_customer`)
+        REFERENCES `' . _DB_PREFIX_ . 'customer`(`id_customer`)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    INDEX `idx_id_categoria` (`id_categoria`),
+    CONSTRAINT `fk_' . $this->name . '_categoria`
+        FOREIGN KEY (`id_categoria`)
+        REFERENCES `' . _DB_PREFIX_ . 'incidencias_categorias`(`id_categoria`)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    INDEX `idx_id_tipo` (`id_tipo`),
+    CONSTRAINT `fk_' . $this->name . '_tipo`
+        FOREIGN KEY (`id_tipo`)
+        REFERENCES `' . _DB_PREFIX_ . 'incidencias_tipos`(`id_tipo`)
+        ON DELETE CASCADE
         ON UPDATE CASCADE
-    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
+    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
 
-    $sql2 = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_mensajes` (
-    `id_mensaje` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
-    `id_incidencia` INT(11) UNSIGNED NOT NULL,
+      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_mensajes` (
+    `id_mensaje` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id_incidencia` INT UNSIGNED NOT NULL,
+    `id_customer` INT UNSIGNED NOT NULL,
     `mensaje` TEXT NOT NULL,
     `creado` DATETIME NOT NULL,
     PRIMARY KEY (`id_mensaje`), 
@@ -60,12 +94,61 @@ class Incidencias extends Module
     FOREIGN KEY (`id_incidencia`)
     REFERENCES `' . _DB_PREFIX_ . $this->name . '_incidencias`(`id_incidencia`)
     ON DELETE CASCADE
+    ON UPDATE CASCADE,
+    INDEX (`id_customer`),
+    CONSTRAINT `fk_' . $this->name . 'mensaje_customer`
+    FOREIGN KEY (`id_customer`)
+    REFERENCES `' . _DB_PREFIX_ . 'customer`(`id_customer`)
+    ON DELETE CASCADE
     ON UPDATE CASCADE
-    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
+    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;'
+
+    ];
+
+    foreach ($sql as $query) {
+      DB::getInstance()->execute($query);
+    };
+
+    $temp = [];
+
+    $categorias = [
+      "Pendiente Respuesta a Cliente",
+      "Pendiente Indemnización",
+      "Pendiente Datos del Cliente",
+      "Envío Demorado"
+    ];
+
+    foreach ($categorias as $cat) {
+      $temp[] = "('" . pSQL($cat) . "')";
+    };
+
+    $sql = "INSERT INTO `" . _DB_PREFIX_ . $this->name . "_categorias` (categoria)
+      VALUES " . implode(',', $temp);
+
+    DB::getInstance()->execute($sql);
+
+    $temp = [];
+
+    $tipos = [
+      "Hay un retraso en mi pedido",
+      "He recibido un pedido que no es mío",
+      "Mi pedido ha llegado roto",
+      "Mi pedido tiene defectos en la impresión",
+      "Faltan artículos en mi pedido",
+      "Quiero cancelar mi pedido",
+      "Otros motivos..."
+    ];
+
+    foreach ($tipos as $tipo) {
+      $temp[] = "('" . pSQL($tipo) . "')";
+    };
+
+    $sql = "INSERT INTO `" . _DB_PREFIX_ . $this->name . "_tipos` (tipo)
+      VALUES " . implode(',', $temp);
+
+    DB::getInstance()->execute($sql);
 
     return parent::install()
-      && DB::getInstance()->execute($sql1)
-      && DB::getInstance()->execute($sql2)
       && $this->installTab()
       && $this->registerHook('displayCustomerAccount');
   }
@@ -73,15 +156,20 @@ class Incidencias extends Module
   public function uninstall()
   {
 
-    $sql1 = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_incidencias`';
-    $sql2 = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_mensajes`';
+    $sql = [
+      'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_mensajes`',
+      'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_incidencias`',
+      'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_categorias`',
+      'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_tipos`',
+    ];
     /* Limpiamos Cache */
     Tools::clearCache();
 
     /* borrar tambien lo que haya metido en la bbdd haciendo un DROP
       * aca se hacer al reves, porque tenes que borrar mensajes priemro */
-    DB::getInstance()->execute($sql2);
-    DB::getInstance()->execute($sql1);
+    foreach ($sql as $query) {
+      DB::getInstance()->execute($query);
+    }
     Configuration::deleteByName(strtoupper($this->name) . '_NAME');
     $this->uninstallTab();
 
