@@ -5,6 +5,18 @@
         <i class="icon-edit"></i>
         {l s='Incidencias Actuales' mod='incidencias'}
     </div>
+
+    {if $success == 1}
+    <div class="alert alert-success">
+        {l s='Incidencia creada correctamente' mod='incidencias'}
+    </div>
+    {/if}
+
+    {if $error == 1}
+    <div class="alert alert-danger">
+        {l s='Ha ocurrido un error al crear la incidencia' mod='incidencias'}
+    </div>
+    {/if}
     
     <div class="panel-body">
     {if !empty($incidencias)}
@@ -13,7 +25,6 @@
               <tr>
                   <th>ID</th>
                   <th>{l s='Fecha' mod='incidencias'}</th>
-                  <th>{l s='Referencia' mod='incidencias'}</th>
                   <th>{l s='Pedido' mod='incidencias'}</th>
                   <th>{l s='Estado' mod='incidencias'}</th>
               </tr>
@@ -21,11 +32,20 @@
 
           <tbody>
               {foreach from=$incidencias item=incidencia}
-                  <tr>
-                      <td>{$incidencia.creado|escape:'html':'UTF-8'}</td>
+                  <tr onclick="window.location='{$link->getModuleLink('incidencias','menu',
+                  ['id'=>$incidencia.id_incidencia])|escape:'html':'UTF-8'}'"
+                  style="cursor:pointer;">
+
+                      <td>{$incidencia.id_incidencia|escape:'html':'UTF-8'}</td>
                       <td>{$incidencia.creado|date_format:"%d/%m/%Y"}</td>
-                      <td>{$incidencia.id_order|escape:'html':'UTF-8'}</td>
-                      <td>{$incidencia.estado|escape:'html':'UTF-8'}</td>
+                      <td>{$incidencia.reference|escape:'html':'UTF-8'}</td>
+                      <td>
+                        {if $incidencia.estado == 1}
+                          Abierta
+                        {else}
+                          Cerrada
+                        {/if}
+                      </td>
                   </tr>
               {/foreach}
           </tbody>
@@ -89,8 +109,9 @@
                     <textarea name="mensaje" 
                               class="form-control" 
                               rows="5"
-                              required>{if isset($registro.descripcion)}{$registro.descripcion}{/if}</textarea>
-                </div>
+                              placeholder="Indique su incidencia..."
+                              required></textarea>
+                    </div>
             </div>
             
             {* Botones *}
@@ -112,15 +133,4 @@
         </form>
     </div>
 </div>
-{if isset($success)}
-    <div class="alert alert-success">
-        {l s='Incidencia creada correctamente' mod='incidencias'}
-    </div>
-{/if}
-
-{if isset($error)}
-    <div class="alert alert-danger">
-        {l s='Ha ocurrido un error al crear la incidencia' mod='incidencias'}
-    </div>
-{/if}
 {/block}
