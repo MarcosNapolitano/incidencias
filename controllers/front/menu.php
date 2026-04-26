@@ -10,24 +10,31 @@ class IncidenciasMenuModuleFrontController extends ModuleFrontController
   {
     parent::initContent();
 
+    if (!$this->context->customer->id)
+      Tools::redirect('index.php?controller=404');
+
     $success = (int)Tools::getValue('conf', 0);
     $error = (int)Tools::getValue('error', 0);
     $id_incidencia = pSQL(Tools::getValue('id', 0));
 
     if ($id_incidencia) {
 
+        $incidencia = Db::getInstance()->executeS('
+            SELECT i.*, o.reference, t.tipo FROM ' . _DB_PREFIX_ . 'incidencias_incidencias i
+            LEFT JOIN ' . _DB_PREFIX_ . 'orders o ON i.id_order = o.id_order
+            LEFT JOIN ' . _DB_PREFIX_ . 'incidencias_tipos t ON i.id_tipo = t.id_tipo
+            WHERE i.id_incidencia = ' . $id_incidencia)[0];
+
       // Procesar envío de mensaje
       if (Tools::isSubmit('submitMensaje')) {
-        return $this->procesarMensaje();
+        if($incidencia["estado"])
+          $this->procesarMensaje();
+        else
+         $error = 1;
       };
 
-      $incidencia = Db::getInstance()->executeS('
-            SELECT i.*, o.reference FROM ' . _DB_PREFIX_ . 'incidencias_incidencias i
-            LEFT JOIN ' . _DB_PREFIX_ . 'orders o ON i.id_order = o.id_order
-            WHERE i.id_incidencia = ' . $id_incidencia);
-
       // ver de indexar mejor esto, la query trae varios array noo solo 1
-      if (!$incidencia || $incidencia[0]['id_customer'] != $this->context->customer->id) {
+      if (!$incidencia || $incidencia['id_customer'] != $this->context->customer->id) {
         Tools::redirect('index.php?controller=404');
       }
 
@@ -35,10 +42,17 @@ class IncidenciasMenuModuleFrontController extends ModuleFrontController
             SELECT * FROM ' . _DB_PREFIX_ . 'incidencias_mensajes
             WHERE `id_incidencia` = ' . $id_incidencia);
 
+      if ($incidencia["mensaje_employee"]) {
+        require_once _PS_MODULE_DIR_ . 'incidencias/classes/IncidenciasIncidencias.php';
+        $updateMensaje = new IncidenciasIncidencias($id_incidencia);
+        $updateMensaje->mensaje_employee = 0;
+        $updateMensaje->update();
+      };
+
       $this->context->smarty->assign([
         'mensajes' => $mensajes,
         'id_customer' => $this->context->customer->id,
-        'incidencia' => $incidencia[0],
+        'incidencia' => $incidencia,
         'success' => $success === 1,
         'error' => $error === 1,
       ]);
@@ -55,8 +69,9 @@ class IncidenciasMenuModuleFrontController extends ModuleFrontController
     $user_id = $this->context->customer->id;
 
     $incidencias = Db::getInstance()->executeS('
-            SELECT i.*, o.reference FROM ' . _DB_PREFIX_ . 'incidencias_incidencias i
+            SELECT i.*, o.reference, t.tipo FROM ' . _DB_PREFIX_ . 'incidencias_incidencias i
             LEFT JOIN ' . _DB_PREFIX_ . 'orders o ON i.id_order = o.id_order 
+            LEFT JOIN ' . _DB_PREFIX_ . 'incidencias_tipos t ON i.id_tipo = t.id_tipo 
             WHERE i.id_customer = ' . pSQL($user_id));
 
     $tipos = Db::getInstance()->executeS('
@@ -138,10 +153,14 @@ class IncidenciasMenuModuleFrontController extends ModuleFrontController
       return;
     }
 
+    require_once _PS_MODULE_DIR_ . 'incidencias/classes/IncidenciasIncidencias.php';
     require_once _PS_MODULE_DIR_ . 'incidencias/classes/IncidenciasMensaje.php';
 
-    $nuevoMensaje = new IncidenciasMensaje();
+    $updateIncidencia = new IncidenciasIncidencias($id_incidencia);
+    $updateIncidencia->mensaje_customer = 1;
+    $updateIncidencia->update();
 
+    $nuevoMensaje = new IncidenciasMensaje();
     $nuevoMensaje->id_incidencia = $id_incidencia;
     $nuevoMensaje->id_customer = $this->context->customer->id;
     $nuevoMensaje->mensaje = $mensaje;

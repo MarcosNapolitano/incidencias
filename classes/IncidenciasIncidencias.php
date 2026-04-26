@@ -11,6 +11,9 @@ class IncidenciasIncidencias extends ObjectModel
   public $id_customer;
   public $id_categoria;
   public $id_tipo;
+  public $id_encargado;
+  public $mensaje_customer;
+  public $mensaje_employee;
   public $estado;
   public $creado;
   public $modificado;
@@ -38,6 +41,18 @@ class IncidenciasIncidencias extends ObjectModel
         'type' => self::TYPE_INT,
         'validate' => 'isUnsignedId',
         'required' => true,
+      ],
+      'id_encargado' => [
+        'type' => self::TYPE_INT,
+        'validate' => 'isUnsignedId',
+      ],
+      'mensaje_customer' => [
+        'type' => self::TYPE_INT,
+        'validate' => 'isUnsignedInt',
+      ],
+      'mensaje_employee' => [
+        'type' => self::TYPE_INT,
+        'validate' => 'isUnsignedInt',
       ],
       'estado' => [
         'type' => self::TYPE_INT,

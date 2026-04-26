@@ -1,7 +1,7 @@
 {extends file='page.tpl'}
 {block name='page_content'}
 <div class="panel">
-    <div class="panel-heading">
+    <div class="panel-heading h2 mb-1">
         <i class="icon-edit"></i>
         {l s='Incidencias Actuales' mod='incidencias'}
     </div>
@@ -23,10 +23,10 @@
       <table class="table table-striped table-hover" id="resultados">
           <thead>
               <tr>
-                  <th>ID</th>
                   <th>{l s='Fecha' mod='incidencias'}</th>
                   <th>{l s='Pedido' mod='incidencias'}</th>
-                  <th>{l s='Estado' mod='incidencias'}</th>
+                  <th>{l s='Tipo' mod='incidencias'}</th>
+                  <th style="text-align: center">{l s='Estado' mod='incidencias'}</th>
               </tr>
           </thead>
 
@@ -36,10 +36,10 @@
                   ['id'=>$incidencia.id_incidencia])|escape:'html':'UTF-8'}'"
                   style="cursor:pointer;">
 
-                      <td>{$incidencia.id_incidencia|escape:'html':'UTF-8'}</td>
                       <td>{$incidencia.creado|date_format:"%d/%m/%Y"}</td>
-                      <td>{$incidencia.reference|escape:'html':'UTF-8'}</td>
-                      <td>
+                      <td class="{if $incidencia.mensaje_employee}nuevo-mensaje{/if}">{$incidencia.reference|escape:'html':'UTF-8'}</td>
+                      <td>{$incidencia.tipo|escape:'html':'UTF-8'}</td>
+                      <td class="{if $incidencia.estado}bg-danger{else}bg-success{/if} text-white" style="text-align: center">
                         {if $incidencia.estado == 1}
                           Abierta
                         {else}
@@ -56,7 +56,7 @@
     </div>
 </div>
 <div class="panel">
-    <div class="panel-heading">
+    <div class="panel-heading h4">
         <i class="icon-edit"></i>
         {l s='Crear Incidencia' mod='incidencias'}
     </div>
@@ -110,6 +110,7 @@
                               class="form-control" 
                               rows="5"
                               placeholder="Indique su incidencia..."
+                              style="resize: none"
                               required></textarea>
                     </div>
             </div>

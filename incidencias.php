@@ -34,25 +34,35 @@ class Incidencias extends Module
   public function install()
   {
     $sql = [
-      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_tipos` (
+    'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_tipos` (
     `id_tipo` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
     `tipo` VARCHAR(255) NOT NULL,
     PRIMARY KEY (`id_tipo`)
     ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
 
-      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_categorias` (
+    'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_categorias` (
     `id_categoria` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
     `categoria` VARCHAR(255) NOT NULL,
     PRIMARY KEY (`id_categoria`)
     ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
 
-      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_incidencias` (
+
+    'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_encargados` (
+    `id_encargado` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `encargado` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`id_encargado`), 
+    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
+
+    'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_incidencias` (
     `id_incidencia` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `id_order` INT UNSIGNED NOT NULL,
     `id_customer` INT UNSIGNED NULL,
     `id_categoria` INT UNSIGNED NULL,
     `id_tipo` INT UNSIGNED NULL,
+    `id_encargado` INT UNSIGNED DEFAULT 9,
     `estado` TINYINT(1) NOT NULL DEFAULT 1,
+    `mensaje_customer` TINYINT(1) NOT NULL DEFAULT 1,
+    `mensaje_employee` TINYINT(1) NOT NULL DEFAULT 0;
     `creado` DATETIME NOT NULL,
     `modificado` DATETIME NOT NULL,
     PRIMARY KEY (`id_incidencia`), 
@@ -80,9 +90,15 @@ class Incidencias extends Module
         REFERENCES `' . _DB_PREFIX_ . 'incidencias_tipos`(`id_tipo`)
         ON DELETE CASCADE
         ON UPDATE CASCADE
+    INDEX `idx_id_encargado` (`id_encargado`),
+    CONSTRAINT `fk_' . $this->name . '_encargado`
+        FOREIGN KEY (`id_encargado`)
+        REFERENCES `' . _DB_PREFIX_ . 'incidencias_encargados`(`id_encargado`)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
     ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
 
-      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_mensajes` (
+    'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_mensajes` (
     `id_mensaje` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `id_incidencia` INT UNSIGNED NOT NULL,
     `id_customer` INT UNSIGNED NOT NULL,
@@ -91,17 +107,21 @@ class Incidencias extends Module
     PRIMARY KEY (`id_mensaje`), 
     INDEX (`id_incidencia`),
     CONSTRAINT `fk_' . $this->name . '_incidencias`
-    FOREIGN KEY (`id_incidencia`)
-    REFERENCES `' . _DB_PREFIX_ . $this->name . '_incidencias`(`id_incidencia`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
+        FOREIGN KEY (`id_incidencia`)
+        REFERENCES `' . _DB_PREFIX_ . $this->name . '_incidencias`(`id_incidencia`)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
     INDEX (`id_customer`),
     CONSTRAINT `fk_' . $this->name . 'mensaje_customer`
-    FOREIGN KEY (`id_customer`)
-    REFERENCES `' . _DB_PREFIX_ . 'customer`(`id_customer`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE
-    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;'
+        FOREIGN KEY (`id_customer`)
+        REFERENCES `' . _DB_PREFIX_ . 'customer`(`id_customer`)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
+
+    'INSERT INTO `' . _DB_PREFIX_ . $this->name . '_encargados` (`id_encargado`, `encargado`) 
+    VALUES (1, "Regli"), (2, "Josema"), (3, "Alvaro"), (4, "Lina"), (5, "Luis"), 
+    (6, "Bernardo"), (7, "Marcos"), (8, "Mihaela"), (9, "Otro"), (10, "Seur"), (11, "MRW");'
 
     ];
 
@@ -161,6 +181,7 @@ class Incidencias extends Module
       'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_incidencias`',
       'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_categorias`',
       'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_tipos`',
+      'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_encargados`',
     ];
     /* Limpiamos Cache */
     Tools::clearCache();

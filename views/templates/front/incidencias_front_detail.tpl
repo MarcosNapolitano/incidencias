@@ -7,13 +7,15 @@
         <thead>
             <tr>
                 <th>{l s='Fecha' mod='incidencias'}</th>
-                <th>{l s='Estado' mod='incidencias'}</th>
+                <th>{l s='Tipo' mod='incidencias'}</th>
+                <th style="text-align: center">{l s='Estado' mod='incidencias'}</th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td>{$incidencia.creado|date_format:"%d/%m/%Y"}</td>
-                <td>
+                <td>{$incidencia.tipo|escape:'html':'UTF-8'}</td>
+                <td class="{if $incidencia.estado}bg-danger{else}bg-success{/if} text-white" style="text-align: center">
                   {if $incidencia.estado == 1}
                     Abierta
                   {else}
@@ -56,13 +58,30 @@
 
     </div>
   {/foreach}
-  <form method="post" class="mt-3">
+  {if !$incidencia.estado}
+  <p class="mt-3">La incidencia se encuentra actualmente cerrada.</p>
+  {/if} 
+  <form method="post">
     <div class="form-group">
-      <textarea name="mensaje" class="form-control" rows="3" placeholder="Escribe tu mensaje..." required></textarea>
+      <textarea name="mensaje" 
+      class="form-control" 
+      rows="3" 
+      style="resize: none"
+      placeholder="Escribe tu mensaje..." 
+      {if !$incidencia.estado}disabled{/if}
+      required></textarea>
     </div>
-    <button type="submit" name="submitMensaje" class="btn btn-primary mt-2">
+    <button type="submit" 
+      {if !$incidencia.estado}disabled{/if} 
+      name="submitMensaje" 
+      class="btn btn-primary">
       Enviar
     </button>
   </form>
+  <button 
+  class="btn btn-primary" 
+  onclick="window.location='{$link->getModuleLink('incidencias','menu')}'">
+  Volver
+  </button>
 </div>
 {/block}

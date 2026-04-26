@@ -44,3 +44,51 @@
   display: flex;
   justify-content: space-between;
 }
+
+.separator td {
+  border-top: 2px solid #ddd;
+  padding: 0;
+  height: 10px;
+  background: #f9f9f9; /* opcional */
+}
+
+.pendiente-respuesta-a-cliente, .abierta{
+  background: red !important;
+  color: whitesmoke !important;
+}
+
+.pendiente-indemnizaci-n{
+  background: darkblue !important;
+  color: whitesmoke !important;
+}
+
+.pendiente-datos-del-cliente, .cerrada{
+  background: green !important;
+  color: whitesmoke !important;
+}
+
+.env-o-demorado{
+  background: orangered !important;
+  color: whitesmoke !important;
+}
+
+.nuevo-mensaje {
+  color: #fff;
+  animation: glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 
+      0 0 5px #ff8c00,
+      0 0 10px #ff8c00,
+      0 0 20px #ff8c00;
+  }
+  to {
+    text-shadow: 
+      0 0 10px #ff8c00,
+      0 0 20px #ff8c00,
+      0 0 40px #ff8c00,
+      0 0 80px #ff8c00;
+  }
+}
