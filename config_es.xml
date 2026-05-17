@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <module>
-    <name>mymodule</name>
-    <displayName><![CDATA[My module]]></displayName>
+    <name>incidencias</name>
+    <displayName><![CDATA[Incidencias]]></displayName>
     <version><![CDATA[1.0.0]]></version>
-    <description><![CDATA[Description of my module.]]></description>
-    <author><![CDATA[Firstname Lastname]]></author>
-    <tab><![CDATA[front_office_features]]></tab>
+    <description><![CDATA[Gesti&oacute;n de Incidencias]]></description>
+    <author><![CDATA[Marcos Napolitano]]></author>
+    <tab><![CDATA[administration]]></tab>
 	<confirmUninstall><![CDATA[Are you sure you want to uninstall?]]></confirmUninstall>
     <is_configurable>1</is_configurable>
     <need_instance>0</need_instance>

@@ -34,26 +34,37 @@ class Incidencias extends Module
   public function install()
   {
     $sql = [
-    'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_tipos` (
+      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_tipos` (
     `id_tipo` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
     `tipo` VARCHAR(255) NOT NULL,
+    `mensaje_predefinido` LONGTEXT NULL,
     PRIMARY KEY (`id_tipo`)
     ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
 
-    'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_categorias` (
+      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_estados_tipos` (
+    `id_tipo` INT(11) UNSIGNED NOT NULL,
+    `id_order_state` INT NOT NULL,
+    PRIMARY KEY (`id_tipo`, `id_order_state`),
+    FOREIGN KEY (`id_tipo`) REFERENCES `' . _DB_PREFIX_ . $this->name . '_tipos`(`id_tipo`) 
+      ON DELETE CASCADE,
+    FOREIGN KEY (`id_order_state`) REFERENCES `' . _DB_PREFIX_ . '_order_state`(`id_order_state`) 
+      ON DELETE CASCADE
+    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
+
+      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_categorias` (
     `id_categoria` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
     `categoria` VARCHAR(255) NOT NULL,
     PRIMARY KEY (`id_categoria`)
     ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
 
 
-    'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_encargados` (
+      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_encargados` (
     `id_encargado` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `encargado` VARCHAR(255) NOT NULL,
-    PRIMARY KEY (`id_encargado`), 
+    PRIMARY KEY (`id_encargado`)
     ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
 
-    'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_incidencias` (
+      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_incidencias` (
     `id_incidencia` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `id_order` INT UNSIGNED NOT NULL,
     `id_customer` INT UNSIGNED NULL,
@@ -62,9 +73,12 @@ class Incidencias extends Module
     `id_encargado` INT UNSIGNED DEFAULT 9,
     `estado` TINYINT(1) NOT NULL DEFAULT 1,
     `mensaje_customer` TINYINT(1) NOT NULL DEFAULT 1,
-    `mensaje_employee` TINYINT(1) NOT NULL DEFAULT 0;
+    `mensaje_employee` TINYINT(1) NOT NULL DEFAULT 0,
     `creado` DATETIME NOT NULL,
     `modificado` DATETIME NOT NULL,
+    `estado_flow` VARCHAR(255),
+    `maquina` VARCHAR(255),
+    `coste` DECIMAL(20,6) NULL,
     PRIMARY KEY (`id_incidencia`), 
     INDEX `idx_id_order` (`id_order`),
     CONSTRAINT `fk_' . $this->name . '_order`
@@ -82,23 +96,21 @@ class Incidencias extends Module
     CONSTRAINT `fk_' . $this->name . '_categoria`
         FOREIGN KEY (`id_categoria`)
         REFERENCES `' . _DB_PREFIX_ . 'incidencias_categorias`(`id_categoria`)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
+        ON DELETE SET NULL
+        ON UPDATE SET NULL,
     INDEX `idx_id_tipo` (`id_tipo`),
-    CONSTRAINT `fk_' . $this->name . '_tipo`
-        FOREIGN KEY (`id_tipo`)
-        REFERENCES `' . _DB_PREFIX_ . 'incidencias_tipos`(`id_tipo`)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
+    CONSTRAINT `fk_' . $this->name . '_tipo` FOREIGN KEY (`id_tipo`) REFERENCES `' . _DB_PREFIX_ . 'incidencias_tipos`(`id_tipo`)
+        ON DELETE SET NULL
+        ON UPDATE SET NULL,
     INDEX `idx_id_encargado` (`id_encargado`),
     CONSTRAINT `fk_' . $this->name . '_encargado`
         FOREIGN KEY (`id_encargado`)
         REFERENCES `' . _DB_PREFIX_ . 'incidencias_encargados`(`id_encargado`)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
+        ON DELETE SET DEFAULT
+        ON UPDATE SET DEFAULT
     ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
 
-    'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_mensajes` (
+      'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_mensajes` (
     `id_mensaje` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `id_incidencia` INT UNSIGNED NOT NULL,
     `id_customer` INT UNSIGNED NOT NULL,
@@ -119,10 +131,10 @@ class Incidencias extends Module
         ON UPDATE CASCADE
     ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
 
-    'INSERT INTO `' . _DB_PREFIX_ . $this->name . '_encargados` (`id_encargado`, `encargado`) 
-    VALUES (1, "Regli"), (2, "Josema"), (3, "Alvaro"), (4, "Lina"), (5, "Luis"), 
-    (6, "Bernardo"), (7, "Marcos"), (8, "Mihaela"), (9, "Otro"), (10, "Seur"), (11, "MRW");'
-
+      'INSERT INTO `' . _DB_PREFIX_ . $this->name . '_encargados` 
+        (`id_encargado`, `encargado`) VALUES (1, "Regli"), (2, "Josema"), 
+        (3, "Alvaro"), (4, "Lina"), (5, "Luis"), (6, "Bernardo"), (7, "Marcos"), 
+        (8, "Mihaela"), (9, "Otro"), (10, "Seur"), (11, "MRW");'
     ];
 
     foreach ($sql as $query) {
@@ -180,6 +192,7 @@ class Incidencias extends Module
       'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_mensajes`',
       'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_incidencias`',
       'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_categorias`',
+      'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_estados_tipos`',
       'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_tipos`',
       'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $this->name . '_encargados`',
     ];
@@ -203,73 +216,32 @@ class Incidencias extends Module
    */
   public function getContent()
   {
-    $output = '';
 
-    if (Tools::isSubmit('submit' . $this->name)) {
-      // this part is executed only when the form is submitted
-      // retrieve the value set by the user
-      $configValue = (string) Tools::getValue('INCIDENCIAS_CONFIG');
+    $this->context->controller->addJS($this->getPathUri() . 'views/js/admin.js');
+    $success = Tools::getValue('conf');
+    $error = Tools::getValue('error');
 
-      // check that the value is valid
-      if (empty($configValue) || !Validate::isGenericName($configValue)) {
-        // invalid value, show an error
-        $output = $this->displayError($this->l('Invalid Configuration value'));
-      } else {
-        // value is ok, update it and display a confirmation message
-        Configuration::updateValue('INCIDENCIAS_CONFIG', $configValue);
-        $output = $this->displayConfirmation($this->l('Settings updated'));
-      }
-    }
+    if (Tools::isSubmit('saveTipo')) return $this->procesarTipo();
 
-    // display any message, then the form
-    return $output . $this->displayForm();
+    if (Tools::isSubmit('saveCategoria')) return $this->procesarCategoria();
+
+    if (Tools::isSubmit('saveEncargado')) return $this->procesarEncargado();
+
+    $encargados = DB::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . $this->name . '_encargados`');
+    $categorias = DB::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . $this->name . '_categorias`');
+    $tipos = DB::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . $this->name . '_tipos`');
+
+    $this->context->smarty->assign([
+      'encargados' => $encargados,
+      'categorias' => $categorias,
+      'tipos' => $tipos,
+      'success' => $success === 1,
+      'error' => $error === 1
+    ]);
+
+    return $this->display(__FILE__, 'views/templates/admin/configure.tpl');
   }
 
-  /**
-   * Builds the configuration form
-   * @return string HTML code
-   */
-  public function displayForm()
-  {
-    // Init Fields form array
-    $form = [
-      'form' => [
-        'legend' => [
-          'title' => $this->l('Settings'),
-        ],
-        'input' => [
-          [
-            'type' => 'text',
-            'label' => $this->l('Configuration value'),
-            'name' => 'INCIDENCIAS_CONFIG',
-            'size' => 20,
-            'required' => true,
-          ],
-        ],
-        'submit' => [
-          'title' => $this->l('Save'),
-          'class' => 'btn btn-default pull-right',
-        ],
-      ],
-    ];
-
-    $helper = new HelperForm();
-
-    // Module, token and currentIndex
-    $helper->table = $this->table;
-    $helper->name_controller = $this->name;
-    $helper->token = Tools::getAdminTokenLite('AdminModules');
-    $helper->currentIndex = AdminController::$currentIndex . '&' . http_build_query(['configure' => $this->name]);
-    $helper->submit_action = 'submit' . $this->name;
-
-    // Default language
-    $helper->default_form_language = (int) Configuration::get('PS_LANG_DEFAULT');
-
-    // Load current value into the form
-    $helper->fields_value['INCIDENCIAS_CONFIG'] = Tools::getValue('INCIDENCIAS_CONFIG', Configuration::get('INCIDENCIAS_CONFIG'));
-
-    return $helper->generateForm([$form]);
-  }
 
   public function installTab()
   {
@@ -278,7 +250,7 @@ class Incidencias extends Module
     $tab->class_name = 'AdminIncidencias';
     $tab->name = [];
     foreach (Language::getLanguages() as $lang) {
-      $tab->name[$lang['id_lang']] = 'incidencias';
+      $tab->name[$lang['id_lang']] = 'Incidencias';
     }
     $tab->id_parent = Tab::getIdFromClassName('AdminParentModulesSf');
     $tab->module = $this->name;
@@ -299,4 +271,72 @@ class Incidencias extends Module
   {
     return $this->fetch('module:incidencias/views/templates/hook/myaccount.tpl');
   }
+
+  public function procesarTipo()
+  {
+    $tipo = pSQL(Tools::getValue("nombre"));
+
+    if (!$tipo)
+      return Tools::redirectAdmin(
+        $this->context->link->getAdminLink('AdminModules', true, null, [
+          'configure' => $this->name,
+          'error' => 1
+        ])
+      );
+
+    $query = '';
+    $id = (int)Tools::getValue("id_tipo");
+    $mensaje = pSQL(Tools::getValue("mensaje"));
+
+    die($id);
+    if (!$id)
+      $query = 'INSERT INTO `' . _DB_PREFIX_ . $this->name . '_tipos`(`tipo`) 
+      VALUES ("' . $tipo . '")';
+    else
+      $query = 'UPDATE `' . _DB_PREFIX_ . $this->name . '_tipos` as t SET `tipo` = "'
+        . $tipo . '", `mensaje_predefinido` = "' . $mensaje . '" WHERE t.`id_tipo` = ' . $id;
+
+    $resultado = DB::getInstance()->execute($query);
+    $params = ['configure' => $this->name];
+
+    $resultado ? $params['conf'] = 1 : $params['error'] = 1;
+
+    return Tools::redirectAdmin(
+      $this->context->link->getAdminLink('AdminModules', true, null, $params)
+    );
+  }
+
+  public function procesarCategoria()
+  {
+    $categoria = pSQL(Tools::getValue("nombre"));
+
+    if (!$categoria)
+      return Tools::redirectAdmin(
+        $this->context->link->getAdminLink('AdminModules', true, null, [
+          'configure' => $this->name,
+          'error' => 1
+        ])
+      );
+
+    $query = '';
+    $id = (int)Tools::getValue("id_categoria");
+
+    if (!$id)
+      $query = 'INSERT INTO `' . _DB_PREFIX_ . $this->name . '_categoria`(`categoria`) 
+      VALUES ("' . $categoria . '")';
+    else
+      $query = 'UPDATE `' . _DB_PREFIX_ . $this->name . '_tipos` as c SET 
+      `categoria` = "' . $categoria . '" WHERE c.`id_categoria` = ' . $id;
+
+    $resultado = DB::getInstance()->execute($query);
+    $params = ['configure' => $this->name];
+
+    $resultado ? $params['conf'] = 1 : $params['error'] = 1;
+
+    return Tools::redirectAdmin(
+      $this->context->link->getAdminLink('AdminModules', true, null, $params)
+    );
+  }
+
+  public function procesarEncargado() {}
 }
