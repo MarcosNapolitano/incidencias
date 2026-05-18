@@ -15,11 +15,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
       document.querySelectorAll('#modalTipo input[type="checkbox"]')
         .forEach(function(chk) {
-          chk.checked = aplica.includes(chk.value);
+          chk.checked = aplica[id].estados.includes(parseInt(chk.value));
         });
 
-      console.log("hi")
       document.querySelector('#modalTipo input[name="id_tipo"]').value = id;
+    });
+  });
+
+  document.querySelectorAll('.btn-new-tipo').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelector('#modalTipo .modal-title').textContent = 'Nuevo Tipo';
+
+      document.querySelector('#modalTipo input[name="nombre"]').value = '';
+      
+      document.querySelector('#modalTipo textarea[name="mensaje"]').value = '';
+
+      document.querySelectorAll('#modalTipo input[type="checkbox"]')
+        .forEach(function(chk) {
+          chk.checked = false;
+        });
+
+      document.querySelector('#modalTipo input[name="id_tipo"]').value = '';
     });
   });
 
@@ -36,6 +52,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
+  document.querySelectorAll('.btn-new-categoria').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelector('#modalCategoria .modal-title').textContent = 'Nueva Categoría';
+
+      document.querySelector('#modalCategoria input[name="nombre"]').value = '';
+
+      document.querySelector('#modalCategoria input[name="id_categoria"]').value = '';
+    });
+  });
+
   document.querySelectorAll('.btn-editar-encargado').forEach(function(btn) {
     btn.addEventListener('click', function() {
       let id = this.dataset.id;
@@ -46,6 +72,16 @@ document.addEventListener('DOMContentLoaded', function() {
       document.querySelector('#modalEncargado input[name="nombre"]').value = nombre;
 
       document.querySelector('#modalEncargado input[name="id_encargado"]').value = id;
+    });
+  });
+
+  document.querySelectorAll('.btn-nuevo-encargado').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelector('#modalEncargado .modal-title').textContent = 'Nuevo Encargado';
+
+      document.querySelector('#modalEncargado input[name="nombre"]').value = '';
+
+      document.querySelector('#modalEncargado input[name="id_encargado"]').value = '';
     });
   });
 });

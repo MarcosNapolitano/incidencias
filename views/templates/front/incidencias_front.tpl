@@ -90,7 +90,7 @@
                 <div class="col-lg-9">
                     <select name="id_tipo" class="form-control" required>
                         <option value="">-- {l s='Seleccione' mod='incidencias'} --</option>
-                        {foreach from=$tipos item=tipo}
+                        {foreach from=$tipos key=id item=tipo}
                             <option value="{$tipo.id_tipo}"
                                     {if isset($registro.id_categoria) && $registro.id_categoria == $cat.id_categoria}selected{/if}>
                                 {$tipo.tipo}

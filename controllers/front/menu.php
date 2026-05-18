@@ -19,7 +19,7 @@ class IncidenciasMenuModuleFrontController extends ModuleFrontController
 
     if ($id_incidencia) {
 
-        $incidencia = Db::getInstance()->executeS('
+      $incidencia = Db::getInstance()->executeS('
             SELECT i.*, o.reference, t.tipo FROM ' . _DB_PREFIX_ . 'incidencias_incidencias i
             LEFT JOIN ' . _DB_PREFIX_ . 'orders o ON i.id_order = o.id_order
             LEFT JOIN ' . _DB_PREFIX_ . 'incidencias_tipos t ON i.id_tipo = t.id_tipo
@@ -27,10 +27,10 @@ class IncidenciasMenuModuleFrontController extends ModuleFrontController
 
       // Procesar envío de mensaje
       if (Tools::isSubmit('submitMensaje')) {
-        if($incidencia["estado"])
+        if ($incidencia["estado"])
           $this->procesarMensaje();
         else
-         $error = 1;
+          $error = 1;
       };
 
       // ver de indexar mejor esto, la query trae varios array noo solo 1
@@ -74,7 +74,22 @@ class IncidenciasMenuModuleFrontController extends ModuleFrontController
             LEFT JOIN ' . _DB_PREFIX_ . 'incidencias_tipos t ON i.id_tipo = t.id_tipo 
             WHERE i.id_customer = ' . pSQL($user_id));
 
-    $tipos = Db::getInstance()->executeS('
+    /* $tipos = Db::getInstance()->executeS(' */
+    /*         SELECT */
+    /*             o.`reference`, */
+    /*             i.tipo */
+    /*         FROM */
+    /*             `ps_orders` AS o */
+    /*         LEFT JOIN `ps_incidencias_estados_tipos` AS et */
+    /*         ON */
+    /*             o.current_state = et.id_order_state */
+    /*         LEFT JOIN `ps_incidencias_tipos` AS i */
+    /*         ON */
+    /*             et.id_tipo = i.id_tipo */
+    /*         WHERE */
+    /*             `id_customer` = 2;'); */
+
+    $tipos = DB::getInstance()->executeS('
             SELECT * FROM ' . _DB_PREFIX_ . 'incidencias_tipos');
 
     $pedidos = DB::getInstance()->executeS('
@@ -116,6 +131,7 @@ class IncidenciasMenuModuleFrontController extends ModuleFrontController
     $registro->id_order = $id_order;
     $registro->id_customer = $id_customer;
     $registro->id_categoria = 1;
+    $registro->id_encargado = 9;
     $registro->id_tipo = $id_tipo;
     $registro->estado = 1;
     $registro->creado = date('Y-m-d H:i:s');
@@ -130,6 +146,20 @@ class IncidenciasMenuModuleFrontController extends ModuleFrontController
       $nuevoMensaje->creado = date('Y-m-d H:i:s');
 
       $nuevoMensaje->add();
+
+      $mensajePredeterminado = DB::getInstance()->executeS(
+        '
+        SELECT `mensaje_predefinido` FROM `' . _DB_PREFIX_ . 'incidencias_tipos` WHERE `id_tipo` = ' . (int)$id_tipo
+      )[0];
+
+      $mensajeAutomatico = new IncidenciasMensaje();
+      $mensajeAutomatico->id_incidencia = $registro->id;
+      // to do: aca hay que poner un id predeterminado de soporte
+      $mensajeAutomatico->id_customer = 1;
+      $mensajeAutomatico->mensaje = $mensajePredeterminado['mensaje_predefinido'];
+      $mensajeAutomatico->creado = date('Y-m-d H:i:s');
+
+      $resultado = $mensajeAutomatico->add();
     }
 
     Tools::redirect(

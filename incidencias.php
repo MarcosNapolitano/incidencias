@@ -43,11 +43,17 @@ class Incidencias extends Module
 
       'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . $this->name . '_estados_tipos` (
     `id_tipo` INT(11) UNSIGNED NOT NULL,
-    `id_order_state` INT NOT NULL,
+    `id_order_state` INT(10) UNSIGNED NOT NULL,
     PRIMARY KEY (`id_tipo`, `id_order_state`),
-    FOREIGN KEY (`id_tipo`) REFERENCES `' . _DB_PREFIX_ . $this->name . '_tipos`(`id_tipo`) 
+    INDEX `idx_id_tipo` (`id_tipo`),
+    CONSTRAINT `fk_' . $this->name . '_id_tipo`
+      FOREIGN KEY (`id_tipo`) 
+      REFERENCES `' . _DB_PREFIX_ . $this->name . '_tipos`(`id_tipo`) 
       ON DELETE CASCADE,
-    FOREIGN KEY (`id_order_state`) REFERENCES `' . _DB_PREFIX_ . '_order_state`(`id_order_state`) 
+    INDEX `idx_id_order_state` (`id_order_state`),
+    CONSTRAINT `fk_id_order_state`
+      FOREIGN KEY (`id_order_state`) 
+      REFERENCES `' . _DB_PREFIX_ . 'order_state_lang`(`id_order_state`) 
       ON DELETE CASCADE
     ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;',
 
@@ -229,17 +235,55 @@ class Incidencias extends Module
 
     $encargados = DB::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . $this->name . '_encargados`');
     $categorias = DB::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . $this->name . '_categorias`');
-    $tipos = DB::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . $this->name . '_tipos`');
+    $estados = DB::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . 'order_state_lang`');
+
+    $tiposQuery = DB::getInstance()->executeS(
+      'SELECT 
+          tp.*,
+          t.id_order_state,
+          osl.name AS estado
+
+      FROM `ps_incidencias_tipos` AS tp
+
+      LEFT JOIN `ps_incidencias_estados_tipos` AS t
+          ON t.id_tipo = tp.id_tipo
+
+      LEFT JOIN `ps_order_state_lang` AS osl
+          ON t.id_order_state = osl.id_order_state
+          AND osl.id_lang = 1');
+
+    $tipos = [];
+
+    foreach ($tiposQuery as $row) {
+
+      $idTipo = (int)$row['id_tipo'];
+
+      if (!isset($tipos[$idTipo])) {
+
+        $tipos[$idTipo] = [
+          'info' => [
+            'id_tipo' => $row['id_tipo'],
+            'tipo' => $row['tipo'],
+            'mensaje_predefinido' => $row['mensaje_predefinido'],
+          ],
+
+          'estados' => []
+        ];
+      }
+
+      $tipos[$idTipo]['estados'][] = (int)$row['id_order_state'];
+    }
 
     $this->context->smarty->assign([
       'encargados' => $encargados,
       'categorias' => $categorias,
       'tipos' => $tipos,
+      'tiposJson' => json_encode($tipos),
+      'estados' => $estados,
       'success' => $success === 1,
       'error' => $error === 1
     ]);
-
-    return $this->display(__FILE__, 'views/templates/admin/configure.tpl');
+return $this->display(__FILE__, 'views/templates/admin/configure.tpl');
   }
 
 
@@ -274,9 +318,9 @@ class Incidencias extends Module
 
   public function procesarTipo()
   {
-    $tipo = pSQL(Tools::getValue("nombre"));
+    $nombre = Tools::getValue("nombre");
 
-    if (!$tipo)
+    if (!$nombre)
       return Tools::redirectAdmin(
         $this->context->link->getAdminLink('AdminModules', true, null, [
           'configure' => $this->name,
@@ -284,21 +328,47 @@ class Incidencias extends Module
         ])
       );
 
-    $query = '';
+    require_once _PS_MODULE_DIR_ . 'incidencias/classes/IncidenciasTipo.php';
+
     $id = (int)Tools::getValue("id_tipo");
-    $mensaje = pSQL(Tools::getValue("mensaje"));
+    $estados = Tools::getValue("aplica");
+    $resultado;
+    $tipo;
 
-    die($id);
-    if (!$id)
-      $query = 'INSERT INTO `' . _DB_PREFIX_ . $this->name . '_tipos`(`tipo`) 
-      VALUES ("' . $tipo . '")';
-    else
-      $query = 'UPDATE `' . _DB_PREFIX_ . $this->name . '_tipos` as t SET `tipo` = "'
-        . $tipo . '", `mensaje_predefinido` = "' . $mensaje . '" WHERE t.`id_tipo` = ' . $id;
+    if (!$id) $tipo = new IncidenciasTipo();
+    else $tipo = new IncidenciasTipo($id);
 
-    $resultado = DB::getInstance()->execute($query);
+    $tipo->tipo = $nombre;
+    $tipo->mensaje_predefinido = Tools::getValue("mensaje");
+
+    $deletion = DB::getInstance()->execute(
+      'DELETE FROM `' . _DB_PREFIX_ . $this->name . '_estados_tipos` WHERE `id_tipo` = ' . $id
+    );
+
+    if (!$deletion)
+      return Tools::redirectAdmin(
+        $this->context->link->getAdminLink('AdminModules', true, null, [
+          'configure' => $this->name,
+          'error' => 1
+        ])
+      );
+
+    if (!$id) $resultado = $tipo->add();
+    else $resultado = $tipo->update();
+
+    if ($estados) {
+
+      $values;
+      foreach ($estados as $indice => $estado_id) {
+        $values = $values . '(' . $tipo->id . "," . (int)$estado_id . "),";
+      };
+      $values = substr($values, 0, -1);
+      $resultado = DB::getInstance()->execute(
+        'INSERT INTO `' . _DB_PREFIX_ . $this->name . '_estados_tipos`(`id_tipo`, `id_order_state`) VALUES ' . $values
+      );
+    };
+
     $params = ['configure' => $this->name];
-
     $resultado ? $params['conf'] = 1 : $params['error'] = 1;
 
     return Tools::redirectAdmin(
@@ -308,9 +378,9 @@ class Incidencias extends Module
 
   public function procesarCategoria()
   {
-    $categoria = pSQL(Tools::getValue("nombre"));
+    $nombre = Tools::getValue("nombre");
 
-    if (!$categoria)
+    if (!$nombre)
       return Tools::redirectAdmin(
         $this->context->link->getAdminLink('AdminModules', true, null, [
           'configure' => $this->name,
@@ -318,19 +388,20 @@ class Incidencias extends Module
         ])
       );
 
-    $query = '';
-    $id = (int)Tools::getValue("id_categoria");
+    require_once _PS_MODULE_DIR_ . 'incidencias/classes/IncidenciasCategoria.php';
 
-    if (!$id)
-      $query = 'INSERT INTO `' . _DB_PREFIX_ . $this->name . '_categoria`(`categoria`) 
-      VALUES ("' . $categoria . '")';
-    else
-      $query = 'UPDATE `' . _DB_PREFIX_ . $this->name . '_tipos` as c SET 
-      `categoria` = "' . $categoria . '" WHERE c.`id_categoria` = ' . $id;
+    $id = Tools::getValue("id_categoria");
+    $resultado;
+    $categoria;
 
-    $resultado = DB::getInstance()->execute($query);
+    if (!$id) $categoria = new IncidenciasCategoria();
+    else $categoria = new IncidenciasCategoria($id);
+    $categoria->categoria = $nombre;
+
+    if (!$id) $resultado = $categoria->add();
+    else $resultado = $categoria->update();
+
     $params = ['configure' => $this->name];
-
     $resultado ? $params['conf'] = 1 : $params['error'] = 1;
 
     return Tools::redirectAdmin(
@@ -338,5 +409,35 @@ class Incidencias extends Module
     );
   }
 
-  public function procesarEncargado() {}
+  public function procesarEncargado() {
+    $nombre = Tools::getValue("nombre");
+
+    if (!$nombre)
+      return Tools::redirectAdmin(
+        $this->context->link->getAdminLink('AdminModules', true, null, [
+          'configure' => $this->name,
+          'error' => 1
+        ])
+      );
+
+    require_once _PS_MODULE_DIR_ . 'incidencias/classes/IncidenciasEncargado.php';
+
+    $id = Tools::getValue("id_encargado");
+    $resultado;
+    $encargado;
+
+    if (!$id) $encargado = new IncidenciasEncargado();
+    else $encargado = new IncidenciasEncargado($id);
+    $encargado->encargado = $nombre;
+
+    if (!$id) $resultado = $encargado->add();
+    else $resultado = $encargado->update();
+
+    $params = ['configure' => $this->name];
+    $resultado ? $params['conf'] = 1 : $params['error'] = 1;
+
+    return Tools::redirectAdmin(
+      $this->context->link->getAdminLink('AdminModules', true, null, $params)
+    );
+  }
 }

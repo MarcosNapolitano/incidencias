@@ -12,7 +12,7 @@
 </div>
 {/if}
 
-<!-- TIPOS -->
+<!-- TIPOS to do: agregar escapes -->
 <div class="card">
   <div class="card-header">
     <h3 class="modal-title">Tipos de Incidencias</h3>
@@ -32,18 +32,18 @@
         {foreach from=$tipos item=$tipo}
         <tr>
           <td><input type="checkbox"></td>
-          <td>{$tipo.id_tipo}</td>
-          <td>{$tipo.tipo}</td>
+          <td>{$tipo.info.id_tipo}</td>
+          <td>{$tipo.info.tipo}</td>
           <td>
             <div class="btn-group btn-group-sm">
               <button 
                 class="btn btn-primary btn-editar-tipo" 
                 data-toggle="modal" 
                 data-target="#modalTipo"
-                data-id="{$tipo.id_tipo}"
-                data-nombre="{$tipo.tipo}"
-                data-mensaje="{$tipo.mensaje_predefinido}"
-                data-aplica='["cat1", "cat2", "cat3"]'
+                data-id="{$tipo.info.id_tipo}"
+                data-nombre="{$tipo.info.tipo}"
+                data-mensaje="{$tipo.info.mensaje_predefinido}"
+                data-aplica='{$tiposJson|escape:'htmlall':'UTF-8'}'
                 />
                 <i class="material-icons">edit</i> Editar
               </button>
@@ -56,7 +56,7 @@
   </div>
 
   <div class="card-footer">
-    <button class="btn btn-primary btn-sm ml-auto" data-toggle="modal" data-target="#modalTipo">
+    <button class="btn btn-primary btn-sm ml-auto btn-new-tipo" data-toggle="modal" data-target="#modalTipo">
       <i class="material-icons">add</i> Nuevo Tipo
     </button>
     <button class="btn btn-danger btn-sm">
@@ -80,14 +80,16 @@
           <input type="hidden" name="id_tipo" value="">
           <div class="form-group">
             <label class="form-control-label">Nombre</label>
-            <input type="text" class="form-control" name="nombre">
+            <input type="text" class="form-control" name="nombre" required>
           </div>
           <div class="form-group">
             <label class="form-control-label">Aplica a</label>
             <div class="list-group">
+              {foreach from=$estados item=$estado}
               <label class="list-group-item">
-                <input type="checkbox" name="aplica[]" value="productos" class="mr-2"> Productos
+                <input type="checkbox" name="aplica[]" value="{$estado.id_order_state}">{$estado.name}</input>
               </label>
+              {/foreach}
             </div>
           </div>
           <div class="form-group">
@@ -150,7 +152,7 @@
   </div>
 
   <div class="card-footer">
-    <button class="btn btn-primary btn-sm ml-auto" data-toggle="modal" data-target="#modalCategoria">
+    <button class="btn btn-primary btn-sm ml-auto btn-new-categoria" data-toggle="modal" data-target="#modalCategoria">
       <i class="material-icons">add</i> Nueva categoría
     </button>
     <button class="btn btn-danger btn-sm">
@@ -174,7 +176,7 @@
           <input type="hidden" name="id_categoria" value="">
           <div class="form-group">
             <label class="form-control-label">Nombre</label>
-            <input type="text" class="form-control" name="nombre">
+            <input type="text" class="form-control" name="nombre" required>
           </div>
         </form>
       </div>
@@ -230,7 +232,7 @@
   </div>
 
   <div class="card-footer">
-    <button class="btn btn-primary btn-sm ml-auto" data-toggle="modal" data-target="#modalEncargado">
+    <button class="btn btn-primary btn-sm ml-auto btn-new-encargado" data-toggle="modal" data-target="#modalEncargado">
       <i class="material-icons">add</i> Nuevo Empleado
     </button>
     <button class="btn btn-danger btn-sm">
@@ -257,7 +259,7 @@
           <input type="hidden" name="id_encargado" value="">
           <div class="form-group">
             <label class="form-control-label">Nombre</label>
-            <input type="text" class="form-control" name="nombre">
+            <input type="text" class="form-control" name="nombre" required>
           </div>
         </form>
       </div>

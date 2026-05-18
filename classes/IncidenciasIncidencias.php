@@ -12,11 +12,11 @@ class IncidenciasIncidencias extends ObjectModel
   public $id_categoria;
   public $id_tipo;
   public $id_encargado;
-  public $mensaje_customer;
-  public $mensaje_employee;
+  public $mensaje_customer; public $mensaje_employee;
   public $estado;
   public $creado;
   public $modificado;
+  public $coste;
 
   public static $definition = [
     'table' => 'incidencias_incidencias',
@@ -65,6 +65,10 @@ class IncidenciasIncidencias extends ObjectModel
       'modificado' => [
         'type' => self::TYPE_DATE,
         'validate' => 'isDate',
+      ],
+      'coste' => [
+        'type' => self::TYPE_FLOAT,
+        'validate' => 'isFloat',
       ],
     ],
   ];
